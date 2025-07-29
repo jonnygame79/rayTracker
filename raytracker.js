@@ -10,43 +10,74 @@ import express from 'express';
 const app = express();
 const PORT = 3002;
 
-let document_data = [];
-let document_data_map = {};
+let super_document_data = [];
+let super_document_data_map = {};
+
+let doctor_document_data = [];
+let doctor_document_data_map = {};
 
 dotenv.config();
 
-// Read JSON file and parse it
-const data = fs.readFileSync('wallets.json', 'utf8');
-const targetWallets = JSON.parse(data);
-let apolloWallets = targetWallets.Apollo.wallets;
-let superWallets = targetWallets.Super.wallets;
-let main1Address = targetWallets.Main[0];
-let main2Address = targetWallets.Main[1];
+let superTGID = process.env.SUPER_TGID;
+let appleTGID = process.env.APPLE_TGID;
+let doctorTGID = process.env.DOCTOR_TGID;
 
-let emojis = ["🦄", "🐉", "🐬", "🦊", "🐼", "🐧", "🦁", "🐸", "🐢", "🐙",
+let superAddress = process.env.SUPER_WALLET;
+let appleAddress = process.env.APPLE_WALLET;
+let doctorAddress = process.env.DOCTOR_WALLET;
+
+let superWallets = [];
+let appleWallets = [];
+let doctorWallets = [];
+
+let allEmojis = [
+    "🦄", "🐉", "🐬", "🦊", "🐼", "🐧", "🦁", "🐸", "🐢", "🐙",
     "🦕", "🦖", "🐲", "🦩", "🦓", "🦔", "🦦", "🦥", "🦝", "🦨",
-    "🦚", "🦜", "🦢", "🦩", "🦦", "🦧", "🦮", "🐕‍🦺", "🐈‍⬛", "🦤",
-    "🦦", "🦭", "🦫", "🦩", "🦚", "🦜", "🦢", "🦩", "🦦", "🦧"
+    "🦚", "🦜", "🦢", "🦧", "🦮", "🐕‍🦺", "🐈‍⬛", "🦤", "🦭", "🦫",
+    "🐶", "🐱", "🐭", "🐹", "🐰", "🦊", "🐻", "🐨", "🐯", "🦁",
+    "🐮", "🐷", "🐸", "🐵", "🙈", "🙉", "🙊", "🐔", "🐧", "🐦",
+    "🐤", "🐣", "🐥", "🦆", "🦅", "🦉", "🦇", "🐺", "🐗", "🐴",
+    "🦄", "🐝", "🪲", "🐞", "🦋", "🐌", "🐚", "🐛", "🦟", "🦗",
+    "🕷", "🦂", "🐢", "🐍", "🦎", "🦖", "🦕", "🐙", "🦑", "🦐",
+    "🦞", "🦀", "🐡", "🐠", "🐟", "🐬", "🐳", "🐋", "🦈", "🐊",
+    "🐅", "🐆", "🦓", "🦍", "🦧", "🦣", "🐘", "🦛", "🦏", "🐪",
+    "🐫", "🦒", "🦘", "🦬", "🐃", "🐂", "🐄", "🐎", "🐖", "🐏",
+    "🐑", "🦙", "🐐", "🦌", "🐕", "🐩", "🦮", "🐕‍🦺", "🐈", "🐓",
+    "🦃", "🦤", "🦚", "🦜", "🦢", "🦩", "🕊", "🐇", "🦝", "🦨",
+    "🦡", "🦦", "🦥", "🐁", "🐀", "🐿", "🦔", "😀", "😃", "😄",
+    "😁", "😆", "😅", "😂", "🤣", "😊", "😇", "🙂", "🙃", "😉",
+    "😌", "😍", "🥰", "😘", "😗", "😙", "😚", "😋", "😜", "🤪",
+    "😝", "🤑", "🤗", "🤭", "🤫", "🤔", "🤐", "🤨", "😐", "😑",
+    "😶", "😏", "😒", "🙄", "😬", "🤥", "😌", "😔", "😪", "🤤",
+    "😴", "😷", "🤒", "🤕", "🤢", "🤮", "🤧", "🥵", "🥶", "🥴",
+    "😵", "🤯", "🤠", "🥳", "😎", "🤓", "🧐", "😕", "😟", "🙁",
+    "☹️", "😮", "😯", "😲", "😳", "🥺", "😦", "😧", "😨", "😰",
+    "😥", "😢", "😭", "😱", "😖", "😣", "😞", "😓", "😩", "😫",
+    "🥱", "😤", "😡", "😠", "🤬", "😈", "👿", "💀", "☠️", "👻",
+    "👽", "👾", "🤖", "🎃", "😺", "😸", "😹", "😻", "😼", "😽",
+    "🙀", "😿", "😾", "🦴", "🦷", "🦾", "🦿", "🦻", "🧠", "🦷",
+    "🦴", "👀", "👁", "👅", "👄", "🦶", "🦵", "👂", "👃", "🧑‍🚀",
+    "🧑‍🔬", "🧑‍💻", "🧑‍🎤", "🧑‍🎨", "🧑‍🚒", "🧑‍✈️", "🧑‍⚕️", "🧑‍🍳", "🧑‍🌾", "🧑‍🔧",
+    "🧑‍🏫", "🧑‍🏭", "🧑‍💼", "🧑‍🔬", "🧑‍🎓", "🧑‍🎤", "🧑‍🎨", "🧑‍🚀", "🧑‍🚒", "🧑‍✈️"
 ];
 
 const TELEGRAM_API_KEY = "7732911760:AAH_84yB5kn0nO94P9x864dhLe5Qn14begY"; // telegram bot API key
-const TELEGRAM_CHAT_ID_APOLLO = 7628599860;
-const TELEGRAM_CHAT_ID_Super = 7773436667;
 const allowedUserId = [
-    TELEGRAM_CHAT_ID_APOLLO,
-    TELEGRAM_CHAT_ID_Super,
+    superTGID,
+    appleTGID,
+    doctorTGID,
 ];
 
-const apiId = parseInt(process.env.TG_API_ID); // replace with your api_id
-const apiHash = process.env.TG_API_HASH; // replace with your api_hash
+const apiId = parseInt(process.env.TG_API_ID); 
+const apiHash = process.env.TG_API_HASH; 
 const stringSession = new StringSession(process.env.TG_SESSION);
 const client = new TelegramClient(stringSession, apiId, apiHash, { connectionRetries: 500 });
 
-let firstBuys = [];
-let copyBuys = [];
-
 console.log("TG Connected...");
 await client.start();
+
+let firstBuys = [];
+let copyBuys = [];
 
 const rayBot = new TelegramBot(TELEGRAM_API_KEY, { polling: true });
 
@@ -70,80 +101,20 @@ rayBot.onText(/\/target_count/, async (msg) => {
     }
     let targetNumber = 0;
     switch (chatId) {
-        case TELEGRAM_CHAT_ID_APOLLO: targetNumber = apolloWallets.length;
-            rayBot.sendMessage(TELEGRAM_CHAT_ID_APOLLO, `There are ${targetNumber} targets.`, {
+        case superTGID: targetNumber = superTracking.length;
+            rayBot.sendMessage(superTGID, `There are ${targetNumber} targets.`, {
                 parse_mode: "HTML",
                 disable_web_page_preview: true
             });
             break;
-        case TELEGRAM_CHAT_ID_Super: targetNumber = superWallets.length;
-            rayBot.sendMessage(TELEGRAM_CHAT_ID_Super, `There are ${targetNumber} targets.`, {
+        case appleTGID: targetNumber = appleTracking.length;
+            rayBot.sendMessage(appleTGID, `There are ${targetNumber} targets.`, {
                 parse_mode: "HTML",
                 disable_web_page_preview: true
             });
             break;
-
-    }
-});
-
-rayBot.onText(/\/add(?: (.+))?/, async (msg, match) => {
-    const chatId = msg.chat.id;
-    if (!allowedUserId.includes(chatId)) { // Ignore messages from other users or optionally send a polite message
-        return rayBot.sendMessage(chatId, "Sorry, you are not authorized to use this bot.");
-    }
-    if (!match[1]) {
-        rayBot.sendMessage(chatId, "You should input a new target address.");
-        return;
-    }
-    switch (chatId) {
-        case TELEGRAM_CHAT_ID_APOLLO: targetWallets.Apollo.wallets.push(match[1]);
-            fs.writeFileSync('wallets.json', JSON.stringify(targetWallets, null, 2), 'utf8');
-            rayBot.sendMessage(TELEGRAM_CHAT_ID_APOLLO, `Successfully added.`, {
-                parse_mode: "HTML",
-                disable_web_page_preview: true
-            });
-            // await client.sendMessage("ray_ruby_bot", {message: `/add ${
-            //         match[1]
-            //     }`});
-            break;
-
-        case TELEGRAM_CHAT_ID_Super: targetWallets.Super.wallets.push(match[1]);
-            fs.writeFileSync('wallets.json', JSON.stringify(targetWallets, null, 2), 'utf8');
-            rayBot.sendMessage(TELEGRAM_CHAT_ID_Super, `Successfully added.`, {
-                parse_mode: "HTML",
-                disable_web_page_preview: true
-            });
-            // await client.sendMessage("ray_ruby_bot", {message: `/add ${
-            //         match[1]
-            //     }`});
-            break;
-
-    }
-});
-
-rayBot.onText(/\/delete(?: (.+))?/, async (msg, match) => {
-    const chatId = msg.chat.id;
-    if (!allowedUserId.includes(chatId)) { // Ignore messages from other users or optionally send a polite message
-        return rayBot.sendMessage(chatId, "Sorry, you are not authorized to use this bot.");
-    }
-    if (!match[1]) {
-        rayBot.sendMessage(chatId, "You should input a address to delete.");
-        return;
-    }
-    switch (chatId) {
-        case TELEGRAM_CHAT_ID_APOLLO: targetWallets.Apollo.wallets = targetWallets.Apollo.wallets.filter(item => item !== match[1]);
-            apolloWallets = targetWallets.Apollo.wallets;
-            fs.writeFileSync('wallets.json', JSON.stringify(targetWallets, null, 2), 'utf8');
-            rayBot.sendMessage(TELEGRAM_CHAT_ID_APOLLO, `Successfully deleted.`, {
-                parse_mode: "HTML",
-                disable_web_page_preview: true
-            });
-            break;
-
-        case TELEGRAM_CHAT_ID_Super: targetWallets.Super.wallets = targetWallets.Super.wallets.filter(item => item !== match[1]);
-            superWallets = targetWallets.Super.wallets;
-            fs.writeFileSync('wallets.json', JSON.stringify(targetWallets, null, 2), 'utf8');
-            rayBot.sendMessage(TELEGRAM_CHAT_ID_Super, `Successfully deleted.`, {
+        case doctorTGID: targetNumber = doctorTracking.length;
+            rayBot.sendMessage(doctorTGID, `There are ${targetNumber} targets.`, {
                 parse_mode: "HTML",
                 disable_web_page_preview: true
             });
@@ -155,6 +126,32 @@ function sleep(ms) {
     return new Promise((resolve) => {
         setTimeout(resolve, ms);
     });
+}
+
+function isValidSolanaAddress(address) {
+    // Solana addresses are base58, 32 or 44 chars, and not all base58 chars are valid
+    // We'll use a regex for base58 and check length
+    const base58Regex = /^[1-9A-HJ-NP-Za-km-z]+$/;
+    if (typeof address !== 'string') return false;
+    if (!base58Regex.test(address)) return false;
+    // Most common: 32, 43, or 44 chars (32 bytes base58-encoded)
+    if (address.length < 32 || address.length > 44) return false;
+    return true;
+}
+
+const getCurrentTime = () => {
+    const now = new Date();
+    // Add 9 hours to current UTC time
+    const utcPlus9 = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+
+    // Extract components
+    const year = utcPlus9.getUTCFullYear();
+    const month = String(utcPlus9.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(utcPlus9.getUTCDate()).padStart(2, '0');
+    const hour = String(utcPlus9.getUTCHours()).padStart(2, '0');
+    const minute = String(utcPlus9.getUTCMinutes()).padStart(2, '0');
+    const result = `${month}-${day} ${hour}:${minute}`;
+    return result;
 }
 
 function getPnlRowRegex(text) {
@@ -177,15 +174,11 @@ const getInfoFromRayMessage = (message) => { // Extract token information (fixed
     ];
 }
 
-
-async function appendSheetColumnI(targetAddress, newValue) {
-    const auth = new google.auth.GoogleAuth({ keyFile: 'credentials.json', scopes: ['https://www.googleapis.com/auth/spreadsheets'] });
-
+async function appendSuperTargetPNL(targetAddress, newValue) {
+    const auth = new google.auth.GoogleAuth({ keyFile: 'super_credentials.json', scopes: ['https://www.googleapis.com/auth/spreadsheets'] });
     const sheets = google.sheets({ version: 'v4', auth });
-
-    // 1. Get current data with error handling
     const getResponse = await sheets.spreadsheets.values.get({
-        spreadsheetId: '1WdgoWRZse6ixQON_eFa5Dv5dCUWIErEgyEpkoZtuVqs', // telegram bot token
+        spreadsheetId: '12ESuMcOdSHSQq4cHh1CuDjrz5dMoEcxuXLQc_39wphI', // telegram bot token
         range: 'Main!A:M'
     }).catch(err => {
         throw new Error(`Fetch failed: ${err.message
@@ -193,33 +186,27 @@ async function appendSheetColumnI(targetAddress, newValue) {
     });
 
     const rows = getResponse.data.values || [];
-
-    // 2. Case-insensitive search with trim
     const rowIndex = rows.findIndex(row => row[0]?.trim().toLowerCase() === targetAddress.trim().toLowerCase());
 
     if (rowIndex === -1) {
         console.log(`${targetAddress} was not found.`);
-        if (targetAddress != main1Address && targetAddress != main2Address) {
+        if (targetAddress != superAddress && targetAddress != appleAddress) {
             await client.sendMessage("ray_ruby_bot", { message: `/delete ${targetAddress}` });
         }
-    } else { // 3. Smart value appending
+    } else {
         const updatedRow = [...rows[rowIndex]];
         const requiredLength = 13;
-        // Columns A-K (0-10)
 
-        // Pad empty cells if needed
         if (updatedRow.length < requiredLength) {
             updatedRow.push(...new Array(requiredLength - updatedRow.length).fill(''));
         }
 
-        // Append with configurable separator
-        const separator = '\n'; // Can make this a function parameter
+        const separator = '\n';
         updatedRow[12] = [
             updatedRow[12].trim(),
             newValue.toString().trim()
         ].filter(Boolean).join(separator);
 
-        // 4. Batch update for better performance
         const sheetRow = rowIndex + 1;
         return await sheets.spreadsheets.values.update({
             spreadsheetId: '1WdgoWRZse6ixQON_eFa5Dv5dCUWIErEgyEpkoZtuVqs', range: `Main!M${sheetRow}`, // Update only column I
@@ -233,14 +220,11 @@ async function appendSheetColumnI(targetAddress, newValue) {
     }
 }
 
-async function appendSheetCopyResult(mainAddress, targetAddress, newValue) {
+async function appendDoctorTargetPNL(targetAddress, newValue) {
     const auth = new google.auth.GoogleAuth({ keyFile: 'credentials.json', scopes: ['https://www.googleapis.com/auth/spreadsheets'] });
-
     const sheets = google.sheets({ version: 'v4', auth });
-
-    // 1. Get current data with error handling
     const getResponse = await sheets.spreadsheets.values.get({
-        spreadsheetId: '1WdgoWRZse6ixQON_eFa5Dv5dCUWIErEgyEpkoZtuVqs', // telegram bot token
+        spreadsheetId: '12ESuMcOdSHSQq4cHh1CuDjrz5dMoEcxuXLQc_39wphI',
         range: 'Main!A:M'
     }).catch(err => {
         throw new Error(`Fetch failed: ${err.message
@@ -248,15 +232,60 @@ async function appendSheetCopyResult(mainAddress, targetAddress, newValue) {
     });
 
     const rows = getResponse.data.values || [];
-
-    // 2. Case-insensitive search with trim
     const rowIndex = rows.findIndex(row => row[0]?.trim().toLowerCase() === targetAddress.trim().toLowerCase());
 
     if (rowIndex === -1) {
         console.log(`${targetAddress} was not found.`);
-        // await client.sendMessage("ray_ruby_bot", { message: `/delete ${targetAddress}` });
-    } else if (mainAddress == main1Address) {
-        console.log("Main1 copy detected:", mainAddress, targetAddress, "Row:", rowIndex)
+        if (targetAddress != superAddress && targetAddress != appleAddress) {
+            await client.sendMessage("ray_ruby_bot", { message: `/delete ${targetAddress}` });
+        }
+    } else {
+        const updatedRow = [...rows[rowIndex]];
+        const requiredLength = 13;
+
+        if (updatedRow.length < requiredLength) {
+            updatedRow.push(...new Array(requiredLength - updatedRow.length).fill(''));
+        }
+
+        const separator = '\n';
+        updatedRow[12] = [
+            updatedRow[12].trim(),
+            newValue.toString().trim()
+        ].filter(Boolean).join(separator);
+
+        const sheetRow = rowIndex + 1;
+        return await sheets.spreadsheets.values.update({
+            spreadsheetId: '1WdgoWRZse6ixQON_eFa5Dv5dCUWIErEgyEpkoZtuVqs', range: `Main!M${sheetRow}`, // Update only column I
+            valueInputOption: 'USER_ENTERED',
+            resource: {
+                values: [
+                    [updatedRow[12]]
+                ]
+            }
+        });
+    }
+}
+
+async function appendSuperCopyResult(mainAddress, targetAddress, newValue) {
+    const auth = new google.auth.GoogleAuth({ keyFile: 'credentials.json', scopes: ['https://www.googleapis.com/auth/spreadsheets'] });
+
+    const sheets = google.sheets({ version: 'v4', auth });
+
+    const getResponse = await sheets.spreadsheets.values.get({
+        spreadsheetId: '12ESuMcOdSHSQq4cHh1CuDjrz5dMoEcxuXLQc_39wphI',
+        range: 'Main!A:M'
+    }).catch(err => {
+        throw new Error(`Fetch failed: ${err.message
+            }`)
+    });
+
+    const rows = getResponse.data.values || [];
+    const rowIndex = rows.findIndex(row => row[0]?.trim().toLowerCase() === targetAddress.trim().toLowerCase());
+
+    if (rowIndex === -1) {
+        console.log(`${targetAddress} was not found.`);
+    } else if (mainAddress == superAddress) {
+        console.log("Super copy detected:", mainAddress, targetAddress, "Row:", rowIndex)
         const updatedRow = [...rows[rowIndex]];
         const requiredLength = 13;
         if (updatedRow.length < requiredLength) {
@@ -270,7 +299,7 @@ async function appendSheetCopyResult(mainAddress, targetAddress, newValue) {
 
         const sheetRow = rowIndex + 1;
         return await sheets.spreadsheets.values.update({
-            spreadsheetId: '1WdgoWRZse6ixQON_eFa5Dv5dCUWIErEgyEpkoZtuVqs', range: `Main!H${sheetRow}`, // Update only column I
+            spreadsheetId: '12ESuMcOdSHSQq4cHh1CuDjrz5dMoEcxuXLQc_39wphI', range: `Main!H${sheetRow}`, // Update only column I
             valueInputOption: 'USER_ENTERED',
             resource: {
                 values: [
@@ -278,8 +307,8 @@ async function appendSheetCopyResult(mainAddress, targetAddress, newValue) {
                 ]
             }
         });
-    } else if (mainAddress == main2Address) {
-        console.log("Main2 copy detected:", mainAddress, targetAddress, "Row:", rowIndex)
+    } else if (mainAddress == appleAddress) {
+        console.log("Apple copy detected:", mainAddress, targetAddress, "Row:", rowIndex)
         const updatedRow = [...rows[rowIndex]];
         const requiredLength = 13;
         if (updatedRow.length < requiredLength) {
@@ -292,7 +321,7 @@ async function appendSheetCopyResult(mainAddress, targetAddress, newValue) {
         ].filter(Boolean).join(separator);
         const sheetRow = rowIndex + 1;
         return await sheets.spreadsheets.values.update({
-            spreadsheetId: '1WdgoWRZse6ixQON_eFa5Dv5dCUWIErEgyEpkoZtuVqs', range: `Main!L${sheetRow}`, // Update only column I
+            spreadsheetId: '12ESuMcOdSHSQq4cHh1CuDjrz5dMoEcxuXLQc_39wphI', range: `Main!L${sheetRow}`, // Update only column I
             valueInputOption: 'USER_ENTERED',
             resource: {
                 values: [
@@ -302,23 +331,53 @@ async function appendSheetCopyResult(mainAddress, targetAddress, newValue) {
         });
     }
 }
-const getCurrentTime = () => {
-    const now = new Date();
-    // Add 9 hours to current UTC time
-    const utcPlus9 = new Date(now.getTime() + 9 * 60 * 60 * 1000);
 
-    // Extract components
-    const year = utcPlus9.getUTCFullYear();
-    const month = String(utcPlus9.getUTCMonth() + 1).padStart(2, '0');
-    const day = String(utcPlus9.getUTCDate()).padStart(2, '0');
-    const hour = String(utcPlus9.getUTCHours()).padStart(2, '0');
-    const minute = String(utcPlus9.getUTCMinutes()).padStart(2, '0');
-    const result = `${month}-${day} ${hour}:${minute}`;
-    return result;
+async function appendDoctorCopyResult(targetAddress, newValue) {
+    const auth = new google.auth.GoogleAuth({ keyFile: 'credentials.json', scopes: ['https://www.googleapis.com/auth/spreadsheets'] });
+
+    const sheets = google.sheets({ version: 'v4', auth });
+
+    const getResponse = await sheets.spreadsheets.values.get({
+        spreadsheetId: '12ESuMcOdSHSQq4cHh1CuDjrz5dMoEcxuXLQc_39wphI',
+        range: 'Main!A:M'
+    }).catch(err => {
+        throw new Error(`Fetch failed: ${err.message
+            }`)
+    });
+
+    const rows = getResponse.data.values || [];
+    const rowIndex = rows.findIndex(row => row[0]?.trim().toLowerCase() === targetAddress.trim().toLowerCase());
+
+    if (rowIndex === -1) {
+        console.log(`${targetAddress} was not found.`);
+    } else if (mainAddress == doctorAddress) {
+        console.log("Doctor copy detected:", mainAddress, targetAddress, "Row:", rowIndex)
+        const updatedRow = [...rows[rowIndex]];
+        const requiredLength = 13;
+        if (updatedRow.length < requiredLength) {
+            updatedRow.push(...new Array(requiredLength - updatedRow.length).fill(''));
+        }
+        const separator = '\n';
+        updatedRow[7] = [
+            updatedRow[7].trim(),
+            newValue.toString().trim()
+        ].filter(Boolean).join(separator);
+
+        const sheetRow = rowIndex + 1;
+        return await sheets.spreadsheets.values.update({
+            spreadsheetId: '12ESuMcOdSHSQq4cHh1CuDjrz5dMoEcxuXLQc_39wphI', range: `Main!H${sheetRow}`, // Update only column I
+            valueInputOption: 'USER_ENTERED',
+            resource: {
+                values: [
+                    [updatedRow[7]]
+                ]
+            }
+        });
+    } 
 }
 
-async function getCopyData(targetAddress) {
-    const updatedRow = document_data_map[targetAddress.trim().toLowerCase()];
+async function getCopyData(mainAddress,targetAddress) {
+    const updatedRow = mainAddress == superAddress || mainAddress == appleAddress ? super_document_data_map[targetAddress.trim().toLowerCase()] : doctor_document_data_map[targetAddress.trim().toLowerCase()];
     if (updatedRow == undefined) {
         return "No data found.";
     }
@@ -339,6 +398,7 @@ async function getCopyData(targetAddress) {
     `
     return result;
 }
+
 app.use(express.json());
 app.use(cors({
     origin: function (origin, callback) {
@@ -348,17 +408,6 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'ngrok-skip-browser-warning', 'User-Agent']
 }));
 
-function isValidSolanaAddress(address) {
-    // Solana addresses are base58, 32 or 44 chars, and not all base58 chars are valid
-    // We'll use a regex for base58 and check length
-    const base58Regex = /^[1-9A-HJ-NP-Za-km-z]+$/;
-    if (typeof address !== 'string') return false;
-    if (!base58Regex.test(address)) return false;
-    // Most common: 32, 43, or 44 chars (32 bytes base58-encoded)
-    if (address.length < 32 || address.length > 44) return false;
-    return true;
-}
-
 app.post('/get_missing_tracks', async (req, res) => {
     console.log("Get missing tracks:", req.body)
     const wallets = req.body?.wallets;
@@ -367,46 +416,15 @@ app.post('/get_missing_tracks', async (req, res) => {
     }
     let result = "";
     let array_result = [];
-    for (let i = 0; i < document_data.length; i++) {
-        if (document_data[i][0] == "") continue;
-        if (wallets.includes(document_data[i][0]) || !isValidSolanaAddress(document_data[i][0])) continue;
-        result += document_data[i][0] + "\n";
-        // Expanded emoji list with many more emojis (animals, faces, objects, etc.)
-        let allEmojis = [
-            "🦄", "🐉", "🐬", "🦊", "🐼", "🐧", "🦁", "🐸", "🐢", "🐙",
-            "🦕", "🦖", "🐲", "🦩", "🦓", "🦔", "🦦", "🦥", "🦝", "🦨",
-            "🦚", "🦜", "🦢", "🦧", "🦮", "🐕‍🦺", "🐈‍⬛", "🦤", "🦭", "🦫",
-            "🐶", "🐱", "🐭", "🐹", "🐰", "🦊", "🐻", "🐨", "🐯", "🦁",
-            "🐮", "🐷", "🐸", "🐵", "🙈", "🙉", "🙊", "🐔", "🐧", "🐦",
-            "🐤", "🐣", "🐥", "🦆", "🦅", "🦉", "🦇", "🐺", "🐗", "🐴",
-            "🦄", "🐝", "🪲", "🐞", "🦋", "🐌", "🐚", "🐛", "🦟", "🦗",
-            "🕷", "🦂", "🐢", "🐍", "🦎", "🦖", "🦕", "🐙", "🦑", "🦐",
-            "🦞", "🦀", "🐡", "🐠", "🐟", "🐬", "🐳", "🐋", "🦈", "🐊",
-            "🐅", "🐆", "🦓", "🦍", "🦧", "🦣", "🐘", "🦛", "🦏", "🐪",
-            "🐫", "🦒", "🦘", "🦬", "🐃", "🐂", "🐄", "🐎", "🐖", "🐏",
-            "🐑", "🦙", "🐐", "🦌", "🐕", "🐩", "🦮", "🐕‍🦺", "🐈", "🐓",
-            "🦃", "🦤", "🦚", "🦜", "🦢", "🦩", "🕊", "🐇", "🦝", "🦨",
-            "🦡", "🦦", "🦥", "🐁", "🐀", "🐿", "🦔", "😀", "😃", "😄",
-            "😁", "😆", "😅", "😂", "🤣", "😊", "😇", "🙂", "🙃", "😉",
-            "😌", "😍", "🥰", "😘", "😗", "😙", "😚", "😋", "😜", "🤪",
-            "😝", "🤑", "🤗", "🤭", "🤫", "🤔", "🤐", "🤨", "😐", "😑",
-            "😶", "😏", "😒", "🙄", "😬", "🤥", "😌", "😔", "😪", "🤤",
-            "😴", "😷", "🤒", "🤕", "🤢", "🤮", "🤧", "🥵", "🥶", "🥴",
-            "😵", "🤯", "🤠", "🥳", "😎", "🤓", "🧐", "😕", "😟", "🙁",
-            "☹️", "😮", "😯", "😲", "😳", "🥺", "😦", "😧", "😨", "😰",
-            "😥", "😢", "😭", "😱", "😖", "😣", "😞", "😓", "😩", "😫",
-            "🥱", "😤", "😡", "😠", "🤬", "😈", "👿", "💀", "☠️", "👻",
-            "👽", "👾", "🤖", "🎃", "😺", "😸", "😹", "😻", "😼", "😽",
-            "🙀", "😿", "😾", "🦴", "🦷", "🦾", "🦿", "🦻", "🧠", "🦷",
-            "🦴", "👀", "👁", "👅", "👄", "🦶", "🦵", "👂", "👃", "🧑‍🚀",
-            "🧑‍🔬", "🧑‍💻", "🧑‍🎤", "🧑‍🎨", "🧑‍🚒", "🧑‍✈️", "🧑‍⚕️", "🧑‍🍳", "🧑‍🌾", "🧑‍🔧",
-            "🧑‍🏫", "🧑‍🏭", "🧑‍💼", "🧑‍🔬", "🧑‍🎓", "🧑‍🎤", "🧑‍🎨", "🧑‍🚀", "🧑‍🚒", "🧑‍✈️"
-        ];
+    for (let i = 0; i < super_document_data.length; i++) {
+        if (super_document_data[i][0] == "") continue;
+        if (wallets.includes(super_document_data[i][0]) || !isValidSolanaAddress(super_document_data[i][0])) continue;
+        result += super_document_data[i][0] + "\n";
 
         const randomEmoji = allEmojis[Math.floor(Math.random() * allEmojis.length)];
         array_result.push({
-            trackedWalletAddress: document_data[i][0],
-            name: document_data[i][0].slice(0, 4),
+            trackedWalletAddress: super_document_data[i][0],
+            name: super_document_data[i][0].slice(0, 4),
             emoji: randomEmoji,
             alertsOn: true
         });
@@ -434,7 +452,7 @@ app.get('/get_copy_data/:token_address/:wallet_address', async (req, res) => {
         if (firstBuys[i].timestamp < first_buy_timestamp - 4000) {
             break;
         }
-        if (firstBuys[i].token == token_address && firstBuys[i].target != main1Address && firstBuys[i].target != main2Address && firstBuys[i].timestamp > first_buy_timestamp - 3000 && firstBuys[i].timestamp < first_buy_timestamp + 3000) {
+        if (firstBuys[i].token == token_address && firstBuys[i].target != superAddress && firstBuys[i].target != appleAddress && firstBuys[i].timestamp > first_buy_timestamp - 3000 && firstBuys[i].timestamp < first_buy_timestamp + 3000) {
             target_address = firstBuys[i].target;
             break;
         }
@@ -445,7 +463,7 @@ app.get('/get_copy_data/:token_address/:wallet_address', async (req, res) => {
         return;
     }
 
-    const copydata = await getCopyData(target_address);
+    const copydata = await getCopyData(wallet_address, target_address);
     res.set('Content-Type', 'text/html');
     res.send(copydata);
 });
@@ -459,10 +477,9 @@ app.listen(PORT, () => {
 });
 
 const startChannelListener = async () => {
-    console.log("Main1:", main1Address, typeof (main1Address));
-    console.log("Main2:", main2Address, typeof (main2Address));
-    // await getLastMessageButton();
-    // await appendSheetColumnI("TestAddrssdfdfdsess", "dfdfasdsaddfd");
+    console.log("Super:", superAddress);
+    console.log("Apple:", appleAddress);
+    console.log("Doctor:", doctorAddress);
 
     client.addEventHandler(async (event) => {
         const message = event.message;
@@ -475,11 +492,15 @@ const startChannelListener = async () => {
                 const tradingResult = `${curDate}  ${result[2]
                     }: ${result[4]
                     }`;
-                if (result[0] == main1Address || result[0] == main2Address) {
-                    const copydata = copyBuys.find(item => item.main == result[0] && item.token == result[1] && item.target != main1Address && item.target != main2Address);
+                if (result[0] == superAddress || result[0] == appleAddress || result[0] == doctorAddress) {
+                    const copydata = copyBuys.find(item => item.main == result[0] && item.token == result[1] && item.target != superAddress && item.target != appleAddress && item.target != doctorAddress);
                     console.log("Copy data:", copydata)
                     if (copydata) {
-                        await appendSheetCopyResult(copydata.main, copydata.target, tradingResult);
+                        if (copydata.main == superAddress || copydata.main == appleAddress) {
+                            await appendSuperCopyResult(copydata.main, copydata.target, tradingResult);
+                        } else if (copydata.main == doctorAddress) {
+                            await appendDoctorCopyResult(copydata.main, copydata.target, tradingResult);
+                        }
                     }
                     return;
                 }
@@ -492,19 +513,29 @@ const startChannelListener = async () => {
                     }">🐸 Token :</a> <code>${result[1]
                     }</code>
 ${tradingResult}`
-                if (document_data_map[result[0].trim().toLowerCase()] != undefined && document_data_map[result[0].trim().toLowerCase()][6] == "TRUE") {
-                    await rayBot.sendMessage(TELEGRAM_CHAT_ID_APOLLO, botMessage, {
+                if (super_document_data_map[result[0].trim().toLowerCase()] != undefined && super_document_data_map[result[0].trim().toLowerCase()][6] == "TRUE") {
+                    await rayBot.sendMessage(superTGID, botMessage, {
+                        parse_mode: "HTML",
+                        disable_web_page_preview: true
+                    });
+                    await rayBot.sendMessage(appleTGID, botMessage, {
                         parse_mode: "HTML",
                         disable_web_page_preview: true
                     });
                 }
-                if (document_data_map[result[0].trim().toLowerCase()] != undefined && document_data_map[result[0].trim().toLowerCase()][10] == "TRUE") {
-                    await rayBot.sendMessage(TELEGRAM_CHAT_ID_Super, botMessage, {
+                if (doctor_document_data_map[result[0].trim().toLowerCase()] != undefined && doctor_document_data_map[result[0].trim().toLowerCase()][10] == "TRUE") {
+                    await rayBot.sendMessage(doctorTGID, botMessage, {
                         parse_mode: "HTML",
                         disable_web_page_preview: true
                     });
                 }
-                await appendSheetColumnI(result[0], tradingResult);
+                if (result[0] == superAddress || result[0] == appleAddress || result[0] == doctorAddress) {
+                    if (result[0] == superAddress || result[0] == appleAddress) {
+                        await appendSuperTargetPNL(result[0], tradingResult);
+                    } else if (result[0] == doctorAddress) {
+                        await appendDoctorTargetPNL(result[0], tradingResult);
+                    }
+                }
             }
             if (rayMessage.includes('TRANSFER')) {
                 console.log(rayMessage);
@@ -512,14 +543,20 @@ ${tradingResult}`
                 const transferAddress = rayMessage.split("\n")[4].match(/🔹\s*([^\s]+)/)[1];
                 const targetAddress = rayMessage.split("\n")[2]
                 if (shrinkTargetAddress == transferAddress) {
-                    if (apolloWallets.includes(targetAddress)) {
-                        await rayBot.sendMessage(TELEGRAM_CHAT_ID_APOLLO, rayMessage, {
+                    if (superWallets.includes(targetAddress)) {
+                        await rayBot.sendMessage(superTGID, rayMessage, {
                             parse_mode: "HTML",
                             disable_web_page_preview: true
                         });
                     }
-                    if (superWallets.includes(targetAddress)) {
-                        await rayBot.sendMessage(TELEGRAM_CHAT_ID_Super, rayMessage, {
+                    if (appleWallets.includes(targetAddress)) {
+                        await rayBot.sendMessage(appleTGID, rayMessage, {
+                            parse_mode: "HTML",
+                            disable_web_page_preview: true
+                        });
+                    }
+                    if (doctorWallets.includes(targetAddress)) {
+                        await rayBot.sendMessage(doctorTGID, rayMessage, {
                             parse_mode: "HTML",
                             disable_web_page_preview: true
                         });
@@ -533,13 +570,13 @@ ${tradingResult}`
 
                 firstBuys.push({ target: targetAddress, token: tokenAddress, timestamp: Date.now() });
 
-                if (targetAddress == main1Address || targetAddress == main2Address) {
+                if (targetAddress == superAddress || targetAddress == appleAddress || targetAddress == doctorAddress) {
                     for (let i = firstBuys.length - 2; i >= 0; i--) {
                         if (firstBuys[i].timestamp < Date.now() - 4000) {
                             console.log("No copy found for:", targetAddress, tokenAddress)
                             return;
                         }
-                        if (firstBuys[i].token == tokenAddress && firstBuys[i].target != main1Address && firstBuys[i].target != main2Address) {
+                        if (firstBuys[i].token == tokenAddress && firstBuys[i].target != superAddress && firstBuys[i].target != appleAddress && firstBuys[i].target != doctorAddress) {
                             copyBuys.push({ main: targetAddress, target: firstBuys[i].target, token: tokenAddress });
                             console.log("Copy found for:", targetAddress, tokenAddress, firstBuys[i].target)
                             return
@@ -553,7 +590,7 @@ ${tradingResult}`
                             console.log("No copy found for:", targetAddress, tokenAddress)
                             return;
                         }
-                        if (firstBuys[i].token == tokenAddress && (firstBuys[i].target == main1Address || firstBuys[i].target == main2Address)) {
+                        if (firstBuys[i].token == tokenAddress && (firstBuys[i].target == superAddress || firstBuys[i].target == appleAddress || firstBuys[i].target == doctorAddress)) {
                             copyBuys.push({ main: firstBuys[i].target, target: targetAddress, token: tokenAddress });
                             console.log("Copy found for:", firstBuys[i].target, tokenAddress, targetAddress)
                             return
@@ -567,14 +604,13 @@ ${tradingResult}`
     }, new NewMessage({}));
 };
 
-async function getCurrentDocument() {
+async function getCurrentSuperDocument() {
     const auth = new google.auth.GoogleAuth({ keyFile: 'credentials.json', scopes: ['https://www.googleapis.com/auth/spreadsheets'] });
 
     const sheets = google.sheets({ version: 'v4', auth });
 
-    // 1. Get current data with error handling
     const getResponse = await sheets.spreadsheets.values.get({
-        spreadsheetId: '1WdgoWRZse6ixQON_eFa5Dv5dCUWIErEgyEpkoZtuVqs', // telegram bot token
+        spreadsheetId: '12ESuMcOdSHSQq4cHh1CuDjrz5dMoEcxuXLQc_39wphI', // telegram bot token
         range: 'Main!A:M'
     }).catch(err => {
         console.log("Fetch err:", err)
@@ -586,41 +622,71 @@ async function getCurrentDocument() {
     return rows;
 }
 
-// This function will update document_data every 20 minutes
+async function getCurrentDoctorDocument() {
+    const auth = new google.auth.GoogleAuth({ keyFile: 'credentials.json', scopes: ['https://www.googleapis.com/auth/spreadsheets'] });
+
+    const sheets = google.sheets({ version: 'v4', auth });
+
+    const getResponse = await sheets.spreadsheets.values.get({
+        spreadsheetId: '12ESuMcOdSHSQq4cHh1CuDjrz5dMoEcxuXLQc_39wphI', // telegram bot token
+        range: 'Main!A:M'
+    }).catch(err => {
+        console.log("Fetch err:", err)
+        throw new Error(`Fetch failed: ${err.message
+            }`)
+    });
+
+    const rows = getResponse.data.values || [];
+    return rows;
+}
+
+// This function will update super_document_data every 20 minutes
 function startDocumentUpdater() { // Immediately fetch once at start
     const update = async () => {
         try {
             console.log("Updating current document...");
-            let new_document_data = await getCurrentDocument();
-            let new_document_data_map = {};
-            for (let i = 0; i < new_document_data.length; i++) {
-                if (new_document_data[i][0] == "") {
+            let new_super_document_data = await getCurrentSuperDocument();
+            let new_super_document_data_map = {};
+            superWallets = [];
+            appleWallets = [];
+            doctorWallets = [];
+            for (let i = 0; i < new_super_document_data.length; i++) {
+                if (new_super_document_data[i][0] == "") {
                     continue;
                 }
-                new_document_data_map[new_document_data[i][0].trim().toLowerCase()] = new_document_data[i];
+                new_super_document_data_map[new_super_document_data[i][0].trim().toLowerCase()] = new_super_document_data[i];
+                if (new_super_document_data[i][6]=="TRUE") {
+                    superWallets.push(new_super_document_data[i][0]);
+                } 
+                if (new_super_document_data[i][10]=="TRUE") {
+                    appleWallets.push(new_super_document_data[i][0]);
+                } 
             }
-            console.log("Newly getted:", Object.keys(new_document_data_map).length, "rows")
+            console.log("Newly getted:", Object.keys(new_super_document_data_map).length, "rows")
 
-            for (let key in new_document_data_map) {
-                if (document_data_map[key] == undefined) {
+            for (let key in new_super_document_data_map) {
+                if (super_document_data_map[key] == undefined) {
                     console.log("Newly added targets:", key)
-                    await client.sendMessage("ray_ruby_bot", { message: `/add ${new_document_data_map[key][0]}` });
+                    await client.sendMessage("ray_ruby_bot", { message: `/add ${new_super_document_data_map[key][0]}` });
                     await sleep(2000);
                 }
             }
-            for (let key in document_data_map) {
-                if (new_document_data_map[key] == undefined) {
+            for (let key in super_document_data_map) {
+                if (new_super_document_data_map[key] == undefined) {
                     console.log("Newly deleted targets:", key)
-                    await client.sendMessage("ray_ruby_bot", { message: `/delete ${document_data_map[key][0]}` });
+                    await client.sendMessage("ray_ruby_bot", { message: `/delete ${super_document_data_map[key][0]}` });
                     await sleep(2000);
                 }
             }
-            console.log("Saving to file...", new_document_data.length)
-            fs.writeFileSync('document_data.json', JSON.stringify(new_document_data, null, 2), 'utf8');
-            document_data = new_document_data;
-            document_data_map = new_document_data_map;
+            console.log("Saving to file...", new_super_document_data.length)
+            console.log("Super wallets:", superWallets.length)
+            console.log("Apple wallets:", appleWallets.length)
+            console.log("Doctor wallets:", doctorWallets.length)
+            fs.writeFileSync('super_document_data.json', JSON.stringify(new_super_document_data, null, 2), 'utf8');
+            super_document_data = new_super_document_data;
+            super_document_data_map = new_super_document_data_map;
         } catch (err) {
-            console.error("Error updating document_data:", err);
+            console.error("Error updating super_document_data:", err);
         }
     };
     update();
@@ -628,12 +694,12 @@ function startDocumentUpdater() { // Immediately fetch once at start
 }
 
 async function main() {
-    document_data = JSON.parse(fs.readFileSync('document_data.json', 'utf8'));
-    for (let i = 0; i < document_data.length; i++) {
-        if (document_data[i][0] == "") {
+    super_document_data = JSON.parse(fs.readFileSync('super_document_data.json', 'utf8'));
+    for (let i = 0; i < super_document_data.length; i++) {
+        if (super_document_data[i][0] == "") {
             continue;
         }
-        document_data_map[document_data[i][0].trim().toLowerCase()] = document_data[i];
+        super_document_data_map[super_document_data[i][0].trim().toLowerCase()] = super_document_data[i];
     }
 
     startDocumentUpdater();
