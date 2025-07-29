@@ -69,4 +69,5 @@ dist/
 
 # Credentials and sensitive files
 credentials.json
+super_credentials.json
 wallets.json
