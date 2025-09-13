@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from "uuid";
-import { device_id, client_id, from_app, app_ver, tz_name, tz_offset, app_lang, fp_did, os } from './gmgn.js';
+import { device_ids, client_id, from_app, app_ver, tz_name, tz_offset, app_lang, fp_dids, os } from './gmgn.js';
 
 export const sleep = (ms) => {
     return new Promise((resolve) => {
@@ -69,6 +69,8 @@ export const getCurrentTime = () => {
 
 export const getCopyTokenInfo = async (wallet, tokenAddress) => {
     await sleep(5000);
+    const device_id = device_ids[Math.floor(Math.random() * device_ids.length)];
+    const fp_did = fp_dids[Math.floor(Math.random() * fp_dids.length)];
     const tokenDetail = await fetch(
         `https://gmgn.ai/api/v1/mutil_window_token_security_launchpad/sol/${tokenAddress}?device_id=${device_id}&client_id=${client_id}&from_app=${from_app}&app_ver=${app_ver}&tz_name=${tz_name}&tz_offset=${tz_offset}&app_lang=${app_lang}&fp_did=${fp_did}&os=${os}`,
         {
@@ -89,6 +91,8 @@ export const getCopyTokenInfo = async (wallet, tokenAddress) => {
 
     let cursor = ""
     while (1) {
+        const device_id = device_ids[Math.floor(Math.random() * device_ids.length)];
+        const fp_did = fp_dids[Math.floor(Math.random() * fp_dids.length)];
         const activites = await fetch(
             `https://gmgn.ai/vas/api/v1/wallet_activity/sol?type=buy&type=sell&device_id=${device_id}&client_id=${client_id}&from_app=${from_app}&app_ver=${app_ver}&tz_name=${tz_name}&tz_offset=${tz_offset}&app_lang=${app_lang}&fp_did=${fp_did}&os=${os}&wallet=${wallet}&token=${tokenAddress}&limit=50&cursor=${cursor}`,
             {
@@ -133,7 +137,6 @@ export const getCopyTokenInfo = async (wallet, tokenAddress) => {
             }
         }
     }
-
 
     const rug_info = await fetch(
         `https://gmgn.ai/api/v1/mutil_window_token_link_rug_vote/sol/${tokenAddress}?device_id=${device_id}&client_id=${client_id}&from_app=${from_app}&app_ver=${app_ver}&tz_name=${tz_name}&tz_offset=${tz_offset}&app_lang=${app_lang}&fp_did=${fp_did}&os=${os}`, {

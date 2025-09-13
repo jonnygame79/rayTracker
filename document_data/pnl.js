@@ -2,12 +2,14 @@ import { google } from 'googleapis';
 import { appleAddress, superAddress, ankaAddress, alphaAddress, doctorAddress, jamesAddress } from './constant.js';
 
 export const appendTargetPNL = async (sheetId, targetAddress, newValue) => {
+    console.log("Appending PNL for:", targetAddress, "with value:", newValue, sheetId);
     const auth = new google.auth.GoogleAuth({ keyFile: 'credentials/credentials.json', scopes: ['https://www.googleapis.com/auth/spreadsheets'] });
     const sheets = google.sheets({ version: 'v4', auth });
     const getResponse = await sheets.spreadsheets.values.get({
-        spreadsheetId: sheetId, // telegram bot token
-        range: 'Main!A:N'
+        spreadsheetId: sheetId,
+        range: 'Solana!A:N'
     }).catch(err => {
+        console.log("Fetch failed:", err.message);
         throw new Error(`Fetch failed: ${err.message
             }`)
     });
@@ -26,14 +28,13 @@ export const appendTargetPNL = async (sheetId, targetAddress, newValue) => {
         }
 
         const separator = '\n';
-        updatedRow[12] = [
-            updatedRow[12].trim(),
-            newValue.toString().trim()
-        ].filter(Boolean).join(separator);
+        const existingLines = updatedRow[12].trim() ? updatedRow[12].trim().split(separator) : [];
+        const newLines = [...existingLines, newValue.toString().trim()].filter(Boolean).slice(-10);
+        updatedRow[12] = newLines.join(separator);
 
         const sheetRow = rowIndex + 1;
         return await sheets.spreadsheets.values.update({
-            spreadsheetId: sheetId, range: `Main!M${sheetRow}`, // Update only column I
+            spreadsheetId: sheetId, range: `Solana!M${sheetRow}`, // Update only column I
             valueInputOption: 'USER_ENTERED',
             resource: {
                 values: [
@@ -51,7 +52,7 @@ export const appendCopyResult = async (sheetId, mainAddress, targetAddress, newV
 
     const getResponse = await sheets.spreadsheets.values.get({
         spreadsheetId: sheetId,
-        range: 'Main!A:N'
+        range: 'Solana!A:N'
     }).catch(err => {
         throw new Error(`Fetch failed: ${err.message
             }`)
@@ -71,18 +72,17 @@ export const appendCopyResult = async (sheetId, mainAddress, targetAddress, newV
             updatedRow.push(...new Array(requiredLength - updatedRow.length).fill(''));
         }
         const separator = '\n';
-        updatedRow[4] = [
-            updatedRow[4].trim(),
-            newValue.toString().trim()
-        ].filter(Boolean).join(separator);
+        const existingLines = updatedRow[6].trim() ? updatedRow[6].trim().split(separator) : [];
+        const newLines = [...existingLines, newValue.toString().trim()].filter(Boolean).slice(-10);
+        updatedRow[6] = newLines.join(separator);
 
         const sheetRow = rowIndex + 1;
         return await sheets.spreadsheets.values.update({
-            spreadsheetId: sheetId, range: `Main!E${sheetRow}`, // Update only column I
+            spreadsheetId: sheetId, range: `Solana!G${sheetRow}`, // Update only column I
             valueInputOption: 'USER_ENTERED',
             resource: {
                 values: [
-                    [updatedRow[4]]
+                    [updatedRow[6]]
                 ]
             }
         });
@@ -93,17 +93,17 @@ export const appendCopyResult = async (sheetId, mainAddress, targetAddress, newV
             updatedRow.push(...new Array(requiredLength - updatedRow.length).fill(''));
         }
         const separator = '\n';
-        updatedRow[8] = [
-            updatedRow[8].trim(),
-            newValue.toString().trim()
-        ].filter(Boolean).join(separator);
+        const existingLines = updatedRow[10].trim() ? updatedRow[10].trim().split(separator) : [];
+        const newLines = [...existingLines, newValue.toString().trim()].filter(Boolean).slice(-10);
+        updatedRow[10] = newLines.join(separator);
+
         const sheetRow = rowIndex + 1;
         return await sheets.spreadsheets.values.update({
-            spreadsheetId: sheetId, range: `Main!I${sheetRow}`, // Update only column I
+            spreadsheetId: sheetId, range: `Solana!K${sheetRow}`, // Update only column I
             valueInputOption: 'USER_ENTERED',
             resource: {
                 values: [
-                    [updatedRow[8]]
+                    [updatedRow[10]]
                 ]
             }
         });

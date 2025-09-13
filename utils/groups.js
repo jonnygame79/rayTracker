@@ -1,4 +1,6 @@
 import { google } from 'googleapis';
+import { device_ids, client_id, from_app, app_ver, tz_name, tz_offset, app_lang, fp_dids, os } from './gmgn.js';
+import { v4 as uuidv4 } from 'uuid';
 
 function colorObjectToRgbString(color) {
     if (!color) {
@@ -56,20 +58,21 @@ export const getGroupsList = async (documentId, sheetName) => {
   return rows.slice(1);
 }
 export const getTradedTokensList = async (wallet) => {
-  const url = `https://gmgn.ai/pf/api/v1/wallet/sol/${wallet}/holdings?device_id=${device_id}&fp_did=${fp_did}&client_id=${client_id}&from_app=${from_app}&app_ver=${app_ver}&tz_name=${tz_name}&tz_offset=${tz_offset}&app_lang=${app_lang}&os=${os}&order_by=last_active_timestamp&direction=desc&hide_small=false&hide_sold_out=false&limit=50&hide_airdrop=false&tx30d=true`
-  const tradeData = await fetch(url,
-      {
-          method: "GET",
-          headers: {
-              "User-Agent": "PostmanRuntime/7.43.3",
-              "Referer": "https://gmgn.ai/sol/address/HBlBl7CI_" + wallet,
-              "Host": "gmgn.ai",
-              "Postman-Token": uuidv4()
-          }
-      }
-  )
-
   try {
+    const device_id = device_ids[Math.floor(Math.random() * device_ids.length)];
+    const fp_did = fp_dids[Math.floor(Math.random() * fp_dids.length)];
+      const url = `https://gmgn.ai/pf/api/v1/wallet/sol/${wallet}/holdings?device_id=${device_id}&fp_did=${fp_did}&client_id=${client_id}&from_app=${from_app}&app_ver=${app_ver}&tz_name=${tz_name}&tz_offset=${tz_offset}&app_lang=${app_lang}&os=${os}&order_by=last_active_timestamp&direction=desc&hide_small=false&hide_sold_out=false&limit=50&hide_airdrop=false&tx30d=true`
+      const tradeData = await fetch(url,
+          {
+              method: "GET",
+              headers: {
+                  "User-Agent": "PostmanRuntime/7.43.3",
+                  "Referer": "https://gmgn.ai/sol/address/HBlBl7CI_" + wallet,
+                  "Host": "gmgn.ai",
+                  "Postman-Token": uuidv4()
+              }
+          }
+      )
       const tradeDataData = await tradeData.json();
       if (tradeDataData.data.list.length == 0) {
           return 0;
@@ -81,7 +84,7 @@ export const getTradedTokensList = async (wallet) => {
       }
       return tokenList;
   } catch (error) {
-      console.log(error);
+      console.log("getTradedTokensList error:", error);
       return [];
   }
 }
