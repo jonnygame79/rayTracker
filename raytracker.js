@@ -153,6 +153,19 @@ app.get('/check_bot_on/:wallet', (req, res) => {
     res.json({ value: Number(duplicateWallets[wallet.trim().toLowerCase()] || 0) });
 });
 
+app.get('/check_bot_on/:wallet/:user', (req, res) => {
+    const { wallet, user } = req.params;
+    let is_active = false;
+    if (user == "Alpha" && alphaWallets.includes(wallet) || user == "Anka" && ankaWallets.includes(wallet) || user == "Super" && superWallets.includes(wallet) || user == "Apple" && appleWallets.includes(wallet) || user == "Doctor" && doctorWallets.includes(wallet) || user == "James" && jamesWallets.includes(wallet)) {
+        is_active = true;
+    }
+    res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.set('Content-Type', 'application/json');
+
+    res.json({ value: is_active? -1 : (Number(duplicateWallets[wallet.trim().toLowerCase()] || 0)) });
+});
+
 app.get('/getTargetInfo/:user/:token', async (req, res) => {
     const { user, token } = req.params;
     const copy_data = await fetchCopyData(user, token);
@@ -492,7 +505,7 @@ const startChannelListener = async () => {
                     }
                 }
                 if (percentValue > 200) {
-                    percentSymbol = "🚀"
+                    percentSymbol = "🟢🟢🟢"
                 } else if (percentValue > 0) {
                     percentSymbol = "🟢"
                 } else {
